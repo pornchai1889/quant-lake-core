@@ -1,0 +1,31 @@
+# ------------------------------------------------------------------------------
+# Configuration for Development Tools (Black, Isort, MyPy, Pytest)
+# ------------------------------------------------------------------------------
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+
+[tool.mypy]
+# Strict type checking configuration
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true  # Ignore libraries that don't have type stubs
+
+[tool.pytest.ini_options]
+# Pytest configuration
+minversion = "6.0"
+addopts = "-ra -q --cov=src"
+testpaths = [
+    "tests",
+]
+python_files = "test_*.py"
