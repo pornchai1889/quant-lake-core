@@ -15,11 +15,10 @@ crypto:
   
   # Default intervals to fetch
   intervals:
-    - "1h"
-    - "1d"
+    - "1m"
     
   # Historical data depth (days)
-  lookback_days: 365
+  lookback_days: 1
 
 # --- Stock Market Settings ---
 stocks:
