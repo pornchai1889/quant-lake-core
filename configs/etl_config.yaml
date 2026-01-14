@@ -1,0 +1,35 @@
+# ------------------------------------------------------------------------------
+# ETL Pipeline Configuration
+# ------------------------------------------------------------------------------
+
+# --- Cryptocurrency Settings ---
+crypto:
+  source: "BINANCE"
+  # Symbols to fetch automatically
+  symbols:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "BNB/USDT"
+    - "SOL/USDT"
+    - "XRP/USDT"
+  
+  # Default intervals to fetch
+  intervals:
+    - "1h"
+    - "1d"
+    
+  # Historical data depth (days)
+  lookback_days: 365
+
+# --- Stock Market Settings ---
+stocks:
+  source: "YAHOO"
+  symbols:
+    - "AAPL"  # Apple
+    - "TSLA"  # Tesla
+    - "MSFT"  # Microsoft
+    - "GOOGL" # Google
+    - "NVDA"  # Nvidia
+    
+  intervals:
+    - "1d"
