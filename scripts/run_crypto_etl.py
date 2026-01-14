@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run Crypto ETL Pipeline")
     
-    # ใช้ค่าจาก YAML เป็น default ถ้า user ไม่พิมพ์มา
+    # Implement YAML-based default configuration fallback
     parser.add_argument("--symbols", nargs="+", default=default_symbols)
     parser.add_argument("--interval", type=str, default=default_interval)
     parser.add_argument("--days", type=int, default=default_days)
