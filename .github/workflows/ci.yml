@@ -1,0 +1,83 @@
+name: CI Pipeline
+
+# Trigger the workflow on push or pull request to the main branch
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+# Define the environment variables for testing
+env:
+  # Using a separate DB name for testing to ensure isolation
+  DB_USER: postgres
+  DB_PASSWORD: test_password
+  DB_NAME: quantlake_test
+  DB_PORT: 5432
+  DB_HOST: localhost
+  APP_ENV: testing
+
+jobs:
+  quality-check:
+    name: Code Quality & Tests
+    runs-on: ubuntu-latest
+    
+    # --------------------------------------------------------------------------
+    # Service Container: TimescaleDB
+    # This spins up a real database instance for integration testing.
+    # --------------------------------------------------------------------------
+    services:
+      timescaledb:
+        image: timescale/timescaledb:latest-pg14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: quantlake_test
+        ports:
+          - 5432:5432
+        # Health check to ensure DB is ready before running tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # 1. Checkout the code from the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Set up Python environment
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip" # Caching pip dependencies for faster builds
+
+      # 3. Install Dependencies
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4. Run Linting (Flake8)
+      # Checks for syntax errors and coding style violations.
+      - name: Run Linter (Flake8)
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 src tests --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 src tests --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+
+      # 5. Run Type Checking (MyPy)
+      # Ensures type safety across the project (Critical for financial systems).
+      - name: Run Type Checker (MyPy)
+        run: mypy src
+
+      # 6. Run Tests (Pytest)
+      # Runs unit and integration tests with coverage report.
+      - name: Run Tests
+        run: |
+          # Wait a bit to ensure DB service is fully up (double safety)
+          sleep 5
+          pytest
