@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # --- TimescaleDB Service (Time-Series Database) ---
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: quant_lake_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      # Persist data even if container is removed
+      - timescaledb_data:/var/lib/postgresql/data
+      # Initialize database schema on first startup
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - quant_lake_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Application Service (Python FastAPI/Worker) ---
+  app:
+    build:
+      context: .
+      dockerfile: docker/app.dockerfile
+    container_name: quant_lake_app
+    volumes:
+      # Hot-reload: map local directory to container
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb:5432/${DB_NAME}
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - quant_lake_network
+    # Currently idle, waiting for commands (Phase 4 will run API)
+    command: tail -f /dev/null
+
+volumes:
+  timescaledb_data:
+
+networks:
+  quant_lake_network:
+    driver: bridge
