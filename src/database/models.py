@@ -23,7 +23,7 @@ from sqlalchemy import (
     JSON,
     Enum,
     Text,
-    UniqueConstraint
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -39,6 +39,7 @@ class AssetClass(str, PyEnum):
     Enumeration for Asset Classes.
     Matches the PostgreSQL ENUM type 'asset_class_enum'.
     """
+
     CRYPTO = "CRYPTO"
     STOCK = "STOCK"
     FOREX = "FOREX"
@@ -53,6 +54,7 @@ class Asset(Base):
     Represents a financial instrument (Master Data).
     Maps to the 'assets' table.
     """
+
     __tablename__ = "assets"
 
     # Primary Key
@@ -61,9 +63,7 @@ class Asset(Base):
     # Core Identity Fields
     symbol: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     asset_class: Mapped[AssetClass] = mapped_column(
-        Enum(AssetClass, name="asset_class_enum"),
-        nullable=False,
-        index=True
+        Enum(AssetClass, name="asset_class_enum"), nullable=False, index=True
     )
     exchange: Mapped[str] = mapped_column(String(50), nullable=False)
 
@@ -74,24 +74,23 @@ class Asset(Base):
 
     # Audit Timestamps
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now()
+        DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     # Table Constraints (Must match SQL Schema)
     __table_args__ = (
-        UniqueConstraint('symbol', 'exchange', name='uq_asset_symbol_exchange'),
+        UniqueConstraint("symbol", "exchange", name="uq_asset_symbol_exchange"),
     )
 
     # Relationships (One-to-Many)
     # Using cascade="all, delete-orphan" to clean up child data if an asset is deleted (conceptually).
     quotes: Mapped[List["MarketQuote"]] = relationship(back_populates="asset")
-    financials: Mapped[List["FinancialStatement"]] = relationship(back_populates="asset")
+    financials: Mapped[List["FinancialStatement"]] = relationship(
+        back_populates="asset"
+    )
 
     def __repr__(self) -> str:
         return f"<Asset(symbol='{self.symbol}', exchange='{self.exchange}', class='{self.asset_class.value}')>"
@@ -105,6 +104,7 @@ class MarketQuote(Base):
     Represents OHLCV market data.
     Maps to the 'market_quotes' hypertable in TimescaleDB.
     """
+
     __tablename__ = "market_quotes"
 
     # Composite Primary Key (Time + Asset) for TimescaleDB
@@ -119,8 +119,7 @@ class MarketQuote(Base):
     volume: Mapped[float] = mapped_column(Double, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now()
+        DateTime(timezone=True), server_default=func.now()
     )
 
     # Relationship
@@ -135,6 +134,7 @@ class FinancialStatement(Base):
     Represents fundamental financial data (Quarterly/Yearly Reports).
     Maps to the 'financial_statements' table.
     """
+
     __tablename__ = "financial_statements"
 
     # Composite Primary Key
@@ -167,6 +167,7 @@ class MacroIndicator(Base):
     Represents global economic indicators (e.g., CPI, GDP, Interest Rates).
     Maps to the 'macro_indicators' table.
     """
+
     __tablename__ = "macro_indicators"
 
     # Composite Primary Key

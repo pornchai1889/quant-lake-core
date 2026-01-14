@@ -8,14 +8,10 @@ from src.core.config import settings
 # ------------------------------------------------------------------------------
 
 # Create the SQLAlchemy engine.
-# - pool_pre_ping=True: Vital for production. It checks if the connection is alive 
+# - pool_pre_ping=True: Vital for production. It checks if the connection is alive
 #   before handing it to the application, preventing "server closed connection" errors.
 # - echo=False: Set to True during debugging to see raw SQL queries in the console.
-engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
-    pool_pre_ping=True,
-    echo=False 
-)
+engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, pool_pre_ping=True, echo=False)
 
 # ------------------------------------------------------------------------------
 # Session Factory
@@ -31,21 +27,25 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base Model Class
 # ------------------------------------------------------------------------------
 
+
 class Base(DeclarativeBase):
     """
     Base class for all SQLAlchemy ORM models.
     In SQLAlchemy 2.0 style, models inherit from this DeclarativeBase.
     """
+
     pass
+
 
 # ------------------------------------------------------------------------------
 # Dependency Injection
 # ------------------------------------------------------------------------------
 
+
 def get_db() -> Generator[Session, None, None]:
     """
     Dependency generator that yields a database session.
-    
+
     Designed to be used with FastAPI's `Depends` or context managers.
     Ensures that the database session is always closed after the request is finished,
     even if an exception occurs during processing.
