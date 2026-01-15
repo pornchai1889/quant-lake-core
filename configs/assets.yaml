@@ -1,0 +1,207 @@
+# ------------------------------------------------------------------------------
+# Master Asset Registry Configuration
+# ------------------------------------------------------------------------------
+# This file serves as the "Single Source of Truth" for all assets in the system.
+# It defines the canonical identity (Symbol + Exchange + Class) for every asset.
+#
+# Used by: scripts/seed_assets.py (to register assets in the DB)
+# ------------------------------------------------------------------------------
+
+# ==============================================================================
+# 1. Special & Abstract Assets (Sentiment / Macro)
+# ==============================================================================
+special_assets:
+  # Market Sentiment Indices (No Price Ticker)
+  - symbol: "GLOBAL_CRYPTO"
+    name: "Global Crypto Market Sentiment"
+    asset_class: "INDEX"
+    exchange: "GLOBAL"
+    description: "Aggregated sentiment score representing the overall crypto market state."
+
+  # Macroeconomic Indicators
+  - symbol: "GLOBAL_MACRO"
+    name: "World Economic Events"
+    asset_class: "MACRO"
+    exchange: "GLOBAL"
+    description: "Global economic indicators (Inflation, Interest Rates, Geopolitics)."
+
+# ==============================================================================
+# 2. Market Indices (Benchmarks)
+# ==============================================================================
+market_indices:
+  # US Market Indices
+  - symbol: "^GSPC"
+    name: "S&P 500"
+    asset_class: "INDEX"
+    exchange: "US_MKT"  # Consolidated US Market
+    description: "Standard & Poor's 500 Index."
+
+  - symbol: "^DJI"
+    name: "Dow Jones Industrial Average"
+    asset_class: "INDEX"
+    exchange: "US_MKT"
+    description: "Dow Jones Industrial Average."
+
+  - symbol: "^IXIC"
+    name: "NASDAQ Composite"
+    asset_class: "INDEX"
+    exchange: "US_MKT"
+    description: "NASDAQ Composite Index."
+
+  # Thai Market Indices
+  - symbol: "^SET.BK"
+    name: "SET Index"
+    asset_class: "INDEX"
+    exchange: "SET"     # Stock Exchange of Thailand
+    description: "Stock Exchange of Thailand Composite Index."
+
+# ==============================================================================
+# 3. Cryptocurrencies
+# ==============================================================================
+cryptocurrencies:
+  # Metadata defaults for this group to reduce redundancy
+  default_exchange: "BINANCE"
+  default_class: "CRYPTO"
+  
+  items:
+    - symbol: "BTC/USDT"
+      name: "Bitcoin"
+      description: "The first decentralized cryptocurrency using peer-to-peer technology."
+
+    - symbol: "ETH/USDT"
+      name: "Ethereum"
+      description: "Open-source blockchain with smart contract functionality (Layer 1)."
+
+    - symbol: "BNB/USDT"
+      name: "Binance Coin"
+      description: "Native utility token of the Binance ecosystem and BNB Chain."
+
+    - symbol: "SOL/USDT"
+      name: "Solana"
+      description: "High-performance blockchain supporting builders around the world."
+
+    - symbol: "XRP/USDT"
+      name: "Ripple"
+      description: "Digital payment protocol for fast, low-cost international money transfers."
+
+# ==============================================================================
+# 4. Stocks (Equities)
+# ==============================================================================
+stocks:
+  # --- US Technology Sector (The Magnificent Seven & Friends) ---
+  us_tech:
+    default_exchange: "NASDAQ"
+    default_class: "STOCK"
+    items:
+      - symbol: "AAPL"
+        name: "Apple Inc."
+        description: "Consumer electronics, software, and online services giant."
+
+      - symbol: "MSFT"
+        name: "Microsoft Corp."
+        description: "Global technology corporation producing software, electronics, and cloud services."
+
+      - symbol: "GOOGL"
+        name: "Alphabet Inc."
+        description: "Conglomerate parent company of Google, focusing on search, ads, and AI."
+
+      - symbol: "AMZN"
+        name: "Amazon.com Inc."
+        description: "E-commerce, cloud computing, digital streaming, and AI."
+
+      - symbol: "NVDA"
+        name: "NVIDIA Corp."
+        description: "Leader in graphics processing units (GPUs) and AI computing hardware."
+
+      - symbol: "TSLA"
+        name: "Tesla Inc."
+        description: "Electric vehicle and clean energy company led by Elon Musk."
+
+      - symbol: "META"
+        name: "Meta Platforms Inc."
+        description: "Social technology company (Facebook, Instagram, WhatsApp) and Metaverse."
+
+  # --- Thailand Blue Chips ---
+  th_bluechips:
+    default_exchange: "SET"
+    default_class: "STOCK"
+    items:
+      - symbol: "PTT.BK"
+        name: "PTT Public Company"
+        description: "Thailand's largest state-owned oil and gas conglomerate."
+
+      - symbol: "AOT.BK"
+        name: "Airports of Thailand"
+        description: "Operator of Thailand's six major international airports."
+
+      - symbol: "CPALL.BK"
+        name: "CP ALL"
+        description: "Flagship company of CP Group, operating 7-Eleven convenience stores in Thailand."
+
+      - symbol: "KBANK.BK"
+        name: "Kasikornbank"
+        description: "One of Thailand's leading commercial banks providing financial services."
+
+      - symbol: "ADVANC.BK"
+        name: "Advanced Info Service (AIS)"
+        description: "Thailand's largest mobile phone operator and telecommunications provider."
+
+      - symbol: "BDMS.BK"
+        name: "Bangkok Dusit Medical Services"
+        description: "Thailand's largest private hospital operator."
+
+      - symbol: "DELTA.BK"
+        name: "Delta Electronics (Thailand)"
+        description: "Manufacturer of power supplies and electronic components."
+
+# ==============================================================================
+# 5. Commodities (Futures)
+# ==============================================================================
+commodities:
+  default_exchange: "COMMODITIES"
+  default_class: "COMMODITY"
+  
+  items:
+    - symbol: "GC=F"
+      name: "Gold Futures"
+      description: "Standard futures contract for Gold (Precious Metal)."
+
+    - symbol: "SI=F"
+      name: "Silver Futures"
+      description: "Standard futures contract for Silver (Precious Metal)."
+
+    - symbol: "CL=F"
+      name: "Crude Oil Futures (WTI)"
+      description: "West Texas Intermediate (WTI) Crude Oil futures."
+
+    - symbol: "HG=F"
+      name: "Copper Futures"
+      description: "Standard futures contract for Copper (Industrial Metal)."
+
+# ==============================================================================
+# 6. Forex (Currencies)
+# ==============================================================================
+forex:
+  default_exchange: "FOREX"
+  default_class: "FOREX"
+  
+  items:
+    - symbol: "EURUSD=X"
+      name: "EUR/USD"
+      description: "Exchange rate between Euro and US Dollar."
+
+    - symbol: "USDJPY=X"
+      name: "USD/JPY"
+      description: "Exchange rate between US Dollar and Japanese Yen."
+
+    - symbol: "GBPUSD=X"
+      name: "GBP/USD"
+      description: "Exchange rate between British Pound and US Dollar."
+
+    - symbol: "USDTHB=X"
+      name: "USD/THB"
+      description: "Exchange rate between US Dollar and Thai Baht."
+
+    - symbol: "DX-Y.NYB"
+      name: "US Dollar Index (DXY)"
+      description: "Measure of the value of the US Dollar relative to a basket of foreign currencies."
