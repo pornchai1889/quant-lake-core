@@ -1,34 +1,114 @@
 # ------------------------------------------------------------------------------
 # ETL Pipeline Configuration
 # ------------------------------------------------------------------------------
+# This configuration drives both the Master Data Seeding (initialization)
+# and the Daily ETL Operations (price ingestion).
+# ------------------------------------------------------------------------------
 
-# --- Cryptocurrency Settings ---
+# ==============================================================================
+# 1. Master Data Seeding (Static & Special Assets)
+# ==============================================================================
+# Assets listed here will be seeded into the database but are NOT actively
+# fetched for OHLCV price data by default. They are primarily for:
+# - Sentiment Analysis (News/Social)
+# - Macroeconomic Indicators
+# - Benchmarking (Indices)
+# ==============================================================================
+seeds:
+  # Market Indices & Benchmarks
+  # Note: Yahoo Finance tickers often require suffixes (e.g., .BK for Thailand)
+  indices:
+    - symbol: "GLOBAL_CRYPTO"
+      name: "Global Crypto Market Sentiment"
+      asset_class: "INDEX"
+      exchange: "GLOBAL"
+      description: "Aggregated sentiment representing the overall crypto market state."
+
+    - symbol: "^SET.BK"
+      name: "Stock Exchange of Thailand"
+      asset_class: "INDEX"
+      exchange: "SET"
+      description: "Thailand composite stock market index (SET Index)."
+
+    - symbol: "^DJI"
+      name: "Dow Jones Industrial Average"
+      asset_class: "INDEX"
+      exchange: "US"
+      description: "US market benchmark index (30 prominent companies)."
+
+    - symbol: "^GSPC"
+      name: "S&P 500"
+      asset_class: "INDEX"
+      exchange: "US"
+      description: "Standard & Poor's 500 Index (Broad US Market)."
+
+    - symbol: "^IXIC"
+      name: "NASDAQ Composite"
+      asset_class: "INDEX"
+      exchange: "US"
+      description: "NASDAQ Composite Index (Tech-heavy benchmark)."
+
+  # Macroeconomic Events (Global)
+  macro:
+    - symbol: "GLOBAL_MACRO"
+      name: "World Economic Events"
+      asset_class: "MACRO"
+      exchange: "GLOBAL"
+      description: "Global economic indicators (Inflation, Rates, Geopolitics)."
+
+# ==============================================================================
+# 2. Active Trading Assets (Price Ingestion)
+# ==============================================================================
+# Assets listed here serve a dual purpose:
+# 1. They are auto-seeded into Master Data if not present.
+# 2. They are actively targeted by 'run_crypto_etl.py' and 'run_stock_etl.py'.
+# ==============================================================================
+
+# --- Cryptocurrency Settings (Source: Binance) ---
 crypto:
   source: "BINANCE"
-  # Symbols to fetch automatically
+  
+  # Major Cryptocurrencies (High Market Cap)
   symbols:
     - "BTC/USDT"
   #  - "ETH/USDT"
   #  - "BNB/USDT"
   #  - "SOL/USDT"
-  #  - "XRP/USDT"
-  
+
   # Default intervals to fetch
   intervals:
     - "1m"
+  #  - "1h"
+  #  - "1d"
     
-  # Historical data depth (days)
+  # Historical data depth for incremental updates (days)
   lookback_days: 1
 
-# --- Stock Market Settings ---
+# --- Stock Market Settings (Source: Yahoo Finance) ---
 stocks:
   source: "YAHOO"
+  
   symbols:
-    - "AAPL"  # Apple
-    - "TSLA"  # Tesla
-    - "MSFT"  # Microsoft
-    - "GOOGL" # Google
-    - "NVDA"  # Nvidia
+    # --- US Tech Giants (The Magnificent Seven & Friends) ---
+  #  - "AAPL"   # Apple Inc.
+  #  - "TSLA"   # Tesla Inc.
+  #  - "MSFT"   # Microsoft Corp.
+  #  - "GOOGL"  # Alphabet Inc. (Google)
+  #  - "NVDA"   # NVIDIA Corp.
+  #  - "AMZN"   # Amazon.com Inc.
+  #  - "META"   # Meta Platforms Inc. (Facebook)
+
+    # --- Thai Blue Chips (Sector Leaders) ---
+    # Note: Yahoo Finance uses '.BK' suffix for SET market symbols.
+    - "PTT.BK"     # PTT Public Company (Energy/Oil - Largest in TH)
+  #  - "AOT.BK"     # Airports of Thailand (Tourism/Transport)
+  #  - "KBANK.BK"   # Kasikornbank (Finance/Banking)
+  #  - "CPALL.BK"   # CP ALL (Commerce - 7-Eleven)
+  #  - "ADVANC.BK"  # Advanced Info Service (ICT/Telecom - AIS)
+  #  - "BDMS.BK"    # Bangkok Dusit Medical Services (Healthcare)
     
   intervals:
-    - "1d"
+    - "1m"
+    
+  # Historical data depth for incremental updates (days)
+  lookback_days: 1
