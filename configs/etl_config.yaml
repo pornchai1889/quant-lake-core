@@ -1,41 +1,7 @@
 # ------------------------------------------------------------------------------
 # ETL Pipeline Configuration
 # ------------------------------------------------------------------------------
-# This configuration drives both the Master Data Seeding (initialization)
-# and the Daily ETL Operations (price ingestion).
-# ------------------------------------------------------------------------------
-
-# ==============================================================================
-# 1. Master Data Seeding (Static & Special Assets)
-# ==============================================================================
-# Assets listed here will be seeded into the database but are NOT actively
-# fetched for OHLCV price data by default. They are primarily for:
-# - Sentiment Analysis (News/Social) - e.g., "Global Market Sentiment"
-# - Macroeconomic Indicators - e.g., "Inflation Rate"
-# ==============================================================================
-seeds:
-  # Abstract Indices (No Ticker Price)
-  indices:
-    - symbol: "GLOBAL_CRYPTO"
-      name: "Global Crypto Market Sentiment"
-      asset_class: "INDEX"
-      exchange: "GLOBAL"
-      description: "Aggregated sentiment representing the overall crypto market state."
-
-  # Macroeconomic Events (Global)
-  macro:
-    - symbol: "GLOBAL_MACRO"
-      name: "World Economic Events"
-      asset_class: "MACRO"
-      exchange: "GLOBAL"
-      description: "Global economic indicators (Inflation, Rates, Geopolitics)."
-
-# ==============================================================================
-# 2. Active Trading Assets (Price Ingestion)
-# ==============================================================================
-# Assets listed here are actively targeted by ETL scripts.
-# The 'seed_assets.py' script will auto-detect their Asset Class based on symbols.
-# ==============================================================================
+# This configuration file defines the settings for data extraction,
 
 # --- Cryptocurrency Settings (Source: Binance) ---
 crypto:
@@ -44,10 +10,10 @@ crypto:
   # Major Cryptocurrencies (High Market Cap & Volume)
   symbols:
     - "BTC/USDT"   # Bitcoin
-    - "ETH/USDT"   # Ethereum
-    - "BNB/USDT"   # Binance Coin
-    - "SOL/USDT"   # Solana
-    - "XRP/USDT"   # Ripple
+  #  - "ETH/USDT"   # Ethereum
+  #  - "BNB/USDT"   # Binance Coin
+  #  - "SOL/USDT"   # Solana
+  #  - "XRP/USDT"   # Ripple
 
   # Default intervals to fetch
   intervals:
@@ -68,51 +34,51 @@ yahoo_finance:
     # ---------------------------------------------------------
     # 1. Major Indices (Market Benchmarks)
     # ---------------------------------------------------------
-    - "^GSPC"      # S&P 500 (US Broad Market)
-    - "^DJI"       # Dow Jones Industrial Average
-    - "^IXIC"      # NASDAQ Composite (Tech)
-    - "^SET.BK"    # SET Index (Thailand)
+  #  - "^GSPC"      # S&P 500 (US Broad Market)
+  #  - "^DJI"       # Dow Jones Industrial Average
+  #  - "^IXIC"      # NASDAQ Composite (Tech)
+  #  - "^SET.BK"    # SET Index (Thailand)
 
     # ---------------------------------------------------------
     # 2. Commodities (Futures) -> Ends with =F
     # ---------------------------------------------------------
-    - "GC=F"       # Gold Futures
-    - "SI=F"       # Silver Futures
-    - "CL=F"       # Crude Oil Futures (WTI)
-    - "HG=F"       # Copper Futures
+  #  - "GC=F"       # Gold Futures
+  #  - "SI=F"       # Silver Futures
+  #  - "CL=F"       # Crude Oil Futures (WTI)
+  #  - "HG=F"       # Copper Futures
 
     # ---------------------------------------------------------
     # 3. Forex (Currencies) -> Ends with =X
     # ---------------------------------------------------------
-    - "EURUSD=X"   # Euro / US Dollar
-    - "USDJPY=X"   # US Dollar / Japanese Yen
-    - "GBPUSD=X"   # British Pound / US Dollar
-    - "USDTHB=X"   # US Dollar / Thai Baht (Crucial for TH Traders)
-    - "DX-Y.NYB"   # US Dollar Index (DXY)
+  #  - "EURUSD=X"   # Euro / US Dollar
+  #  - "USDJPY=X"   # US Dollar / Japanese Yen
+  #  - "GBPUSD=X"   # British Pound / US Dollar
+  #  - "USDTHB=X"   # US Dollar / Thai Baht (Crucial for TH Traders)
+  #  - "DX-Y.NYB"   # US Dollar Index (DXY)
 
     # ---------------------------------------------------------
     # 4. Global Tech Giants (US Stocks)
     # ---------------------------------------------------------
-    - "AAPL"       # Apple Inc.
-    - "MSFT"       # Microsoft Corp.
-    - "GOOGL"      # Alphabet Inc.
-    - "AMZN"       # Amazon.com Inc.
-    - "NVDA"       # NVIDIA Corp.
-    - "TSLA"       # Tesla Inc.
-    - "META"       # Meta Platforms Inc.
+  #  - "AAPL"       # Apple Inc.
+  #  - "MSFT"       # Microsoft Corp.
+  #  - "GOOGL"      # Alphabet Inc.
+  #  - "AMZN"       # Amazon.com Inc.
+  #  - "NVDA"       # NVIDIA Corp.
+  #  - "TSLA"       # Tesla Inc.
+  #  - "META"       # Meta Platforms Inc.
 
     # ---------------------------------------------------------
     # 5. Thai Blue Chips (TH Stocks)
     # ---------------------------------------------------------
     - "PTT.BK"     # PTT Public Company (Energy)
-    - "AOT.BK"     # Airports of Thailand
-    - "CPALL.BK"   # CP ALL (Commerce)
-    - "KBANK.BK"   # Kasikornbank
-    - "ADVANC.BK"  # AIS (Telecom)
-    - "BDMS.BK"    # Bangkok Dusit Medical Services
-    - "DELTA.BK"   # Delta Electronics (Thailand)
+  #  - "AOT.BK"     # Airports of Thailand
+  #  - "CPALL.BK"   # CP ALL (Commerce)
+  #  - "KBANK.BK"   # Kasikornbank
+  #  - "ADVANC.BK"  # AIS (Telecom)
+  #  - "BDMS.BK"    # Bangkok Dusit Medical Services
+  #  - "DELTA.BK"   # Delta Electronics (Thailand)
 
   intervals:
-    - "1d"
+    - "1m"
     
   lookback_days: 1
