@@ -27,7 +27,7 @@ crypto:
 
 # --- Global Market Settings (Source: Yahoo Finance) ---
 # Renamed from 'stocks' to 'yahoo_finance' to reflect diverse asset coverage.
-yahoo_finance:
+yahoo:
   source: "YAHOO"
   
   # Mixed Assets (Stocks, Indices, Forex, Commodities)
@@ -43,7 +43,7 @@ yahoo_finance:
     # ---------------------------------------------------------
     # 2. Commodities (Futures) -> Ends with =F
     # ---------------------------------------------------------
-  #  - "GC=F"       # Gold Futures
+    - "GC=F"       # Gold Futures
   #  - "SI=F"       # Silver Futures
   #  - "CL=F"       # Crude Oil Futures (WTI)
   #  - "HG=F"       # Copper Futures
@@ -51,7 +51,7 @@ yahoo_finance:
     # ---------------------------------------------------------
     # 3. Forex (Currencies) -> Ends with =X
     # ---------------------------------------------------------
-  #  - "EURUSD=X"   # Euro / US Dollar
+#    - "EURUSD=X"   # Euro / US Dollar
   #  - "USDJPY=X"   # US Dollar / Japanese Yen
   #  - "GBPUSD=X"   # British Pound / US Dollar
   #  - "USDTHB=X"   # US Dollar / Thai Baht (Crucial for TH Traders)
@@ -61,6 +61,7 @@ yahoo_finance:
     # 4. Global Tech Giants (US Stocks)
     # ---------------------------------------------------------
   #  - "AAPL"       # Apple Inc.
+  #  - "AMD"       # Advanced Micro Devices
   #  - "MSFT"       # Microsoft Corp.
   #  - "GOOGL"      # Alphabet Inc.
   #  - "AMZN"       # Amazon.com Inc.
@@ -71,7 +72,10 @@ yahoo_finance:
     # ---------------------------------------------------------
     # 5. Thai Blue Chips (TH Stocks)
     # ---------------------------------------------------------
-    - "PTT.BK"     # PTT Public Company (Energy)
+#    - "PTT.BK"     # PTT Public Company (Energy)
+#    - "SCB.BK"     # Siam Commercial Bank
+#    - "SCC.BK"     # Siam Cement Company
+#    - "GULF.BK"    # Gulf Energy Development
   #  - "AOT.BK"     # Airports of Thailand
   #  - "CPALL.BK"   # CP ALL (Commerce)
   #  - "KBANK.BK"   # Kasikornbank
