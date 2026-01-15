@@ -10,6 +10,7 @@ crypto:
   # Major Cryptocurrencies (High Market Cap & Volume)
   symbols:
     - "BTC/USDT"   # Bitcoin
+  #  - "SHIB/USDT"   # Shiba Inu
   #  - "ETH/USDT"   # Ethereum
   #  - "BNB/USDT"   # Binance Coin
   #  - "SOL/USDT"   # Solana

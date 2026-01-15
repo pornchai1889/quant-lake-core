@@ -5,10 +5,10 @@ Crypto ETL Execution Script.
 This script serves as the entry point for the Cryptocurrency ETL (Extract, Transform, Load) pipeline.
 It orchestrates the retrieval of historical OHLCV data and persists it into the time-series database.
 
-Features:
-- Supports incremental loading via lookback days (default).
-- Supports historical backfilling via specific start/end dates (CLI arguments).
-- Handles efficient bulk upserts to prevent data duplication.
+Architecture Note:
+    This script adheres to strict Separation of Concerns. It acts purely as a Transactional Data
+    loader. It DOES NOT create Master Data (Assets). All assets must be pre-registered via
+    the 'seed_assets.py' script before ETL can process them.
 
 Usage:
     1. Standard Run (Default from config):
@@ -41,7 +41,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.core.config import settings  # noqa: E402
 from src.database.connection import SessionLocal  # noqa: E402
-from src.database.models import Asset, MarketQuote, AssetClass  # noqa: E402
+from src.database.models import Asset, MarketQuote  # noqa: E402
 from src.data_ingestion.binance.binance_fetcher import BinanceFetcher  # noqa: E402
 
 
@@ -78,40 +78,26 @@ def load_etl_config(config_path: str = "configs/etl_config.yaml") -> Dict[str, A
         return {}
 
 
-def get_or_create_asset(session: Session, symbol: str) -> Asset:
+def get_asset(session: Session, symbol: str) -> Optional[Asset]:
     """
-    Retrieve an asset from the database or create it if it doesn't exist.
+    Retrieve an asset from the database by its symbol and exchange.
+    
+    This function strictly validates existence. It does NOT create new assets.
 
     Args:
         session (Session): The database session.
         symbol (str): The asset symbol (e.g., 'BTC/USDT').
 
     Returns:
-        Asset: The SQLAlchemy Asset object.
+        Optional[Asset]: The SQLAlchemy Asset object if found, otherwise None.
     """
-    # Check if asset exists
-    asset = (
+    # Explicitly filter by Exchange to avoid ambiguity (though symbol is usually unique per exchange)
+    # Using 'BINANCE' as the hardcoded source context for this specific script.
+    return (
         session.query(Asset)
         .filter(Asset.symbol == symbol, Asset.exchange == "BINANCE")
         .one_or_none()
     )
-
-    if asset:
-        return asset
-
-    # Create new asset if not found
-    logger.info(f"Asset '{symbol}' not found in DB. Creating new Master Data entry.")
-    new_asset = Asset(
-        symbol=symbol,
-        asset_class=AssetClass.CRYPTO,
-        exchange="BINANCE",
-        name=f"Crypto {symbol}",
-        is_active=True,
-    )
-    session.add(new_asset)
-    session.commit()
-    session.refresh(new_asset)
-    return new_asset
 
 
 def save_market_data(session: Session, asset_id: int, df: pd.DataFrame) -> int:
@@ -196,11 +182,25 @@ def run_etl(
             try:
                 logger.info(f"Processing {symbol}...")
 
-                # Step A: Ensure Asset Exists (Master Data)
-                asset = get_or_create_asset(session, symbol)
+                # Step A: Validate Asset Existence (Master Data Check)
+                asset = get_asset(session, symbol)
+
+                if not asset:
+                    logger.error(
+                        f"Asset '{symbol}' NOT FOUND in database. Skipping ETL."
+                    )
+                    logger.error(
+                        "ACTION REQUIRED: Please register this asset in 'configs/assets.yaml' "
+                        "and run 'python scripts/seed_assets.py' first."
+                    )
+                    continue
+                
+                # Check if asset is active (Soft delete check)
+                if not asset.is_active:
+                    logger.warning(f"Asset '{symbol}' is marked as inactive. Skipping.")
+                    continue
 
                 # Step B: Extract (Fetch Data)
-                # Note: The fetcher now handles pagination automatically
                 df = fetcher.fetch_ohlcv(
                     symbol=symbol,
                     interval=interval,
