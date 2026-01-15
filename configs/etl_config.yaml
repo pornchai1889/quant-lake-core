@@ -71,9 +71,9 @@ crypto:
   # Major Cryptocurrencies (High Market Cap)
   symbols:
     - "BTC/USDT"
-  #  - "ETH/USDT"
-  #  - "BNB/USDT"
-  #  - "SOL/USDT"
+    - "ETH/USDT"
+    - "BNB/USDT"
+    - "SOL/USDT"
 
   # Default intervals to fetch
   intervals:
@@ -90,22 +90,22 @@ stocks:
   
   symbols:
     # --- US Tech Giants (The Magnificent Seven & Friends) ---
-  #  - "AAPL"   # Apple Inc.
-  #  - "TSLA"   # Tesla Inc.
-  #  - "MSFT"   # Microsoft Corp.
-  #  - "GOOGL"  # Alphabet Inc. (Google)
-  #  - "NVDA"   # NVIDIA Corp.
-  #  - "AMZN"   # Amazon.com Inc.
-  #  - "META"   # Meta Platforms Inc. (Facebook)
+    - "AAPL"   # Apple Inc.
+    - "TSLA"   # Tesla Inc.
+    - "MSFT"   # Microsoft Corp.
+    - "GOOGL"  # Alphabet Inc. (Google)
+    - "NVDA"   # NVIDIA Corp.
+    - "AMZN"   # Amazon.com Inc.
+    - "META"   # Meta Platforms Inc. (Facebook)
 
     # --- Thai Blue Chips (Sector Leaders) ---
     # Note: Yahoo Finance uses '.BK' suffix for SET market symbols.
     - "PTT.BK"     # PTT Public Company (Energy/Oil - Largest in TH)
-  #  - "AOT.BK"     # Airports of Thailand (Tourism/Transport)
-  #  - "KBANK.BK"   # Kasikornbank (Finance/Banking)
-  #  - "CPALL.BK"   # CP ALL (Commerce - 7-Eleven)
-  #  - "ADVANC.BK"  # Advanced Info Service (ICT/Telecom - AIS)
-  #  - "BDMS.BK"    # Bangkok Dusit Medical Services (Healthcare)
+    - "AOT.BK"     # Airports of Thailand (Tourism/Transport)
+    - "KBANK.BK"   # Kasikornbank (Finance/Banking)
+    - "CPALL.BK"   # CP ALL (Commerce - 7-Eleven)
+    - "ADVANC.BK"  # Advanced Info Service (ICT/Telecom - AIS)
+    - "BDMS.BK"    # Bangkok Dusit Medical Services (Healthcare)
     
   intervals:
     - "1m"

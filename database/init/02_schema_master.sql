@@ -6,7 +6,7 @@
 
 -- 1. Create ENUM type for Asset Classes to ensure data integrity.
 --    This restricts values to only valid asset types.
-CREATE TYPE asset_class_enum AS ENUM ('CRYPTO', 'STOCK', 'FOREX', 'COMMODITY');
+CREATE TYPE asset_class_enum AS ENUM ('CRYPTO', 'STOCK', 'FOREX', 'COMMODITY', 'INDEX', 'MACRO');
 
 -- 2. Create 'assets' table to store instrument definitions.
 --    This acts as the central registry for all financial instruments.
