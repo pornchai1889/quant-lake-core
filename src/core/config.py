@@ -48,6 +48,23 @@ class Settings(BaseSettings):
     
     # Timeout in seconds (LLMs can be slow)
     OLLAMA_TIMEOUT: float = 60.0
+    
+    # --------------------------------------------------------------------------
+    # News & Sentiment Data Providers [NEW]
+    # --------------------------------------------------------------------------
+    # API Key for CryptoPanic (Aggregator for Crypto News)
+    CRYPTOPANIC_API_KEY: Optional[str] = None
+    
+    # API Key for NewsAPI (General Finance News)
+    NEWSAPI_API_KEY: Optional[str] = None
+
+    # --------------------------------------------------------------------------
+    # Google News Settings [NEW]
+    # --------------------------------------------------------------------------
+    GOOGLE_NEWS_LANG: str = "en"      # Language (en, th, jp)
+    GOOGLE_NEWS_COUNTRY: str = "US"   # Country (US, TH, JP)
+    GOOGLE_NEWS_PERIOD: str = "7d"    # Lookback period (e.g., 7d = 7 days)
+    GOOGLE_NEWS_MAX_RESULTS: int = 50 # Default limit
 
     # --------------------------------------------------------------------------
     # Pydantic Configuration
