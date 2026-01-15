@@ -42,7 +42,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.core.config import settings  # noqa: E402
 from src.database.connection import SessionLocal  # noqa: E402
 from src.database.models import Asset, MarketQuote, AssetClass  # noqa: E402
-from src.data_ingestion.crypto.binance_fetcher import BinanceFetcher  # noqa: E402
+from src.data_ingestion.binance.binance_fetcher import BinanceFetcher  # noqa: E402
 
 
 # ------------------------------------------------------------------------------

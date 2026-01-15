@@ -18,8 +18,8 @@ crypto:
   # Default intervals to fetch
   intervals:
     - "1m"
-    - "1h"
-    - "1d"
+  #  - "1h"
+  #  - "1d"
     
   # Historical data depth for incremental updates (days)
   lookback_days: 1
