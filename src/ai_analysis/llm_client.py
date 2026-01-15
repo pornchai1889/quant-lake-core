@@ -2,30 +2,31 @@
 Ollama API Client Module.
 
 This module provides a robust client for interacting with the Ollama Inference Server.
-It abstracts the HTTP communication logic, error handling, and response parsing,
-allowing the rest of the application to treat LLM calls as simple function invocations.
+It abstracts the HTTP communication logic, error handling, and response parsing.
 
-Standard:
-- Uses 'requests' for synchronous HTTP calls (compatible with ETL scripts).
-- Implements strict type hinting and logging.
+Features:
+- Auto-pull models if missing (Self-healing).
+- Strict type hinting and error logging.
 """
 
 import logging
 import json
-from typing import Optional, Dict, Any
+import time
+from typing import Optional, Dict, Any, List
 
 import requests
 from requests.exceptions import RequestException, Timeout
 
 from src.core.config import settings
 
-# Configure logger for this module
+# Configure logger
 logger = logging.getLogger(__name__)
 
 
 class OllamaClient:
     """
-    Client for communicating with the Ollama API (running in Docker or Local).
+    Client for communicating with the Ollama API.
+    Handles inference requests and model management.
     """
 
     def __init__(
@@ -38,32 +39,85 @@ class OllamaClient:
         Initialize the Ollama Client.
 
         Args:
-            base_url (Optional[str]): The API endpoint (e.g., 'http://localhost:11434').
-                                      Defaults to settings.OLLAMA_BASE_URL.
-            model (Optional[str]): The default model name to use.
-                                   Defaults to settings.OLLAMA_MODEL.
-            timeout (Optional[float]): Request timeout in seconds.
+            base_url (Optional[str]): The API endpoint. Defaults to settings.
+            model (Optional[str]): The model name to use. Defaults to settings.
+            timeout (Optional[float]): Inference timeout in seconds.
         """
         self.base_url = (base_url or settings.OLLAMA_BASE_URL).rstrip("/")
         self.model = model or settings.OLLAMA_MODEL
         self.timeout = timeout or settings.OLLAMA_TIMEOUT
         
         self.generate_endpoint = f"{self.base_url}/api/generate"
+        self.tags_endpoint = f"{self.base_url}/api/tags"
+        self.pull_endpoint = f"{self.base_url}/api/pull"
 
-    def check_health(self) -> bool:
+    def ensure_model_exists(self) -> None:
         """
-        Check if the Ollama service is reachable.
+        Check if the configured model exists locally. If not, trigger an automatic pull.
+        
+        This mechanism ensures 'Zero Config' deployment: users don't need to manually
+        pull models via CLI. The system heals itself on startup.
+        """
+        if self._check_model_availability():
+            return
 
+        logger.info(f"Model '{self.model}' not found in Ollama. Starting automatic download...")
+        self._pull_model()
+
+    def _check_model_availability(self) -> bool:
+        """
+        Query Ollama to see if the model is already downloaded.
+        
         Returns:
-            bool: True if service is up (HTTP 200), False otherwise.
+            bool: True if model exists, False otherwise.
         """
         try:
-            # Ollama root endpoint usually returns a simple status message
-            response = requests.get(self.base_url, timeout=5.0)
-            return response.status_code == 200
-        except RequestException as e:
-            logger.warning(f"Ollama health check failed: {e}")
+            response = requests.get(self.tags_endpoint, timeout=10.0)
+            if response.status_code == 200:
+                data = response.json()
+                models: List[Dict[str, Any]] = data.get("models", [])
+                
+                # Check if our model name appears in the list
+                # Note: Ollama might return 'qwen2.5:3b' or 'qwen2.5:3b-instruct'
+                # We do a substring match to be safe.
+                exists = any(self.model in m.get("name", "") for m in models)
+                
+                if exists:
+                    logger.info(f"Model '{self.model}' is ready.")
+                    return True
+            
             return False
+
+        except RequestException as e:
+            logger.warning(f"Could not check model availability (Ollama might be down): {e}")
+            return False
+
+    def _pull_model(self) -> None:
+        """
+        Trigger the model download. This blocks until completion or timeout.
+        """
+        try:
+            logger.info(f"Pulling model '{self.model}'. This may take a few minutes...")
+            
+            # We set stream=False to wait for the full download.
+            # Timeout is set to 30 minutes (1800s) to accommodate large models/slow networks.
+            payload = {"name": self.model, "stream": False}
+            
+            response = requests.post(
+                self.pull_endpoint, 
+                json=payload, 
+                timeout=1800.0  # Hardcoded long timeout for downloading
+            )
+            
+            response.raise_for_status()
+            logger.info(f"Successfully downloaded model '{self.model}'.")
+
+        except Exception as e:
+            logger.error(
+                f"Failed to auto-pull model '{self.model}': {e}. "
+                "Please check your internet connection or pull manually."
+            )
+            # We don't raise here to allow the app to try running anyway (it might fail later)
 
     def generate(
         self,
@@ -74,21 +128,11 @@ class OllamaClient:
     ) -> Optional[Dict[str, Any]]:
         """
         Send a prompt to the LLM and retrieve the generated response.
-
-        Args:
-            prompt (str): The user input or news text to analyze.
-            system_prompt (Optional[str]): Context/Persona instructions for the model.
-            format (str): Desired output format. Defaults to 'json' (critical for Quant work).
-            options (Optional[Dict]): Additional model parameters (temperature, seed, etc.).
-
-        Returns:
-            Optional[Dict[str, Any]]: The parsed JSON response from the model,
-                                      or None if the request failed.
         """
         payload = {
             "model": self.model,
             "prompt": prompt,
-            "stream": False,  # Disable streaming to get a single full JSON response
+            "stream": False,
             "format": format,
         }
 
@@ -99,7 +143,7 @@ class OllamaClient:
             payload["options"] = options
 
         try:
-            logger.debug(f"Sending request to Ollama ({self.model})...")
+            logger.debug(f"Sending inference request to Ollama ({self.model})...")
             
             response = requests.post(
                 self.generate_endpoint,
@@ -107,32 +151,19 @@ class OllamaClient:
                 timeout=self.timeout
             )
             
-            # Raise an error for 4xx or 5xx status codes
             response.raise_for_status()
-
-            # Parse the response body
             result = response.json()
-            
-            # Ollama returns the actual generated text in the 'response' field
-            # Since we requested JSON format, we try to parse that inner string as JSON
             raw_response_text = result.get("response", "")
             
             if format == "json":
                 try:
                     return json.loads(raw_response_text)
                 except json.JSONDecodeError:
-                    logger.error("Failed to parse LLM output as JSON. Raw output: %s", raw_response_text)
+                    logger.error("Failed to parse LLM output as JSON.")
                     return None
             
-            # If not JSON format, return wrapped in a dict
             return {"text": raw_response_text}
 
-        except Timeout:
-            logger.error(f"Ollama request timed out after {self.timeout}s.")
-            return None
-        except RequestException as e:
-            logger.error(f"Ollama API request failed: {e}")
-            return None
         except Exception as e:
-            logger.exception(f"Unexpected error during LLM inference: {e}")
+            logger.error(f"Ollama inference failed: {e}")
             return None
