@@ -8,10 +8,10 @@ crypto:
   # Symbols to fetch automatically
   symbols:
     - "BTC/USDT"
-    - "ETH/USDT"
-    - "BNB/USDT"
-    - "SOL/USDT"
-    - "XRP/USDT"
+  #  - "ETH/USDT"
+  #  - "BNB/USDT"
+  #  - "SOL/USDT"
+  #  - "XRP/USDT"
   
   # Default intervals to fetch
   intervals:
