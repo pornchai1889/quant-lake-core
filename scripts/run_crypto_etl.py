@@ -44,7 +44,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)]
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("crypto_etl")
 
 def load_etl_config(config_path: str = "configs/etl_config.yaml") -> Dict[str, Any]:
     """Load ETL configuration from a YAML file."""
