@@ -10,6 +10,7 @@ crypto:
   # Major Cryptocurrencies (High Market Cap & Volume)
   symbols:
     - "BTC/USDT"   # Bitcoin
+  #  - "SHIB/USDT"   # Shiba Inu
   #  - "ETH/USDT"   # Ethereum
   #  - "BNB/USDT"   # Binance Coin
   #  - "SOL/USDT"   # Solana
@@ -18,8 +19,8 @@ crypto:
   # Default intervals to fetch
   intervals:
     - "1m"
-    - "1h"
-    - "1d"
+  #  - "1h"
+  #  - "1d"
     
   # Historical data depth for incremental updates (days)
   lookback_days: 1
