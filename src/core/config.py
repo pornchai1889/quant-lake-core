@@ -37,6 +37,19 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
 
     # --------------------------------------------------------------------------
+    # AI / LLM Settings [NEW]
+    # --------------------------------------------------------------------------
+    # Default to localhost for running scripts outside Docker.
+    # Inside Docker, this should be overridden to "http://ollama:11434"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    
+    # Default Model to use for inference (e.g., 'gemma2:2b', 'phi3.5')
+    OLLAMA_MODEL: str = "qwen2.5:3b"
+    
+    # Timeout in seconds (LLMs can be slow)
+    OLLAMA_TIMEOUT: float = 60.0
+
+    # --------------------------------------------------------------------------
     # Pydantic Configuration
     # --------------------------------------------------------------------------
     model_config = SettingsConfigDict(

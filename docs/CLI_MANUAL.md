@@ -24,7 +24,6 @@ Run the script from the project root directory using the Python interpreter:
 
 ```bash
 python scripts/run_crypto_etl.py [OPTIONS]
-
 ```
 
 ### Command-Line Arguments
@@ -47,7 +46,6 @@ Executes the pipeline using defaults defined in `configs/etl_config.yaml`. This 
 
 ```bash
 python scripts/run_crypto_etl.py
-
 ```
 
 ### 2. Manual Short-Term Lookback
@@ -56,7 +54,6 @@ Fetches data for the last 7 days for the default symbols. Useful for quick data 
 
 ```bash
 python scripts/run_crypto_etl.py --days 7
-
 ```
 
 ### 3. Historical Backfill (Specific Month)
@@ -64,11 +61,10 @@ python scripts/run_crypto_etl.py --days 7
 Retrieves a full month of data for a specific period. The system handles pagination automatically.
 
 ```bash
-# Example: Fetch January 2024 data
+# Example: Fetch December 2025 data
 python scripts/run_crypto_etl.py \
-  --start-date 2024-01-01 \
-  --end-date 2024-01-31
-
+  --start-date 2025-12-01 \
+  --end-date 2025-12-31
 ```
 
 ### 4. Backfill from Date to Present
@@ -76,9 +72,8 @@ python scripts/run_crypto_etl.py \
 Fetches all data starting from a specific date up to the current moment.
 
 ```bash
-# Fetch from Jan 1st, 2025 to NOW
-python scripts/run_crypto_etl.py --start-date 2025-01-01
-
+# Fetch from Jan 1st, 2026 to NOW
+python scripts/run_crypto_etl.py --start-date 2026-01-01
 ```
 
 ### 5. Specific Assets & Intervals
@@ -91,7 +86,6 @@ python scripts/run_crypto_etl.py \
   --symbols BTC/USDT ETH/USDT \
   --interval 15m \
   --days 3
-
 ```
 
 ---

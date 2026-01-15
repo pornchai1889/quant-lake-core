@@ -4,7 +4,6 @@ SQLAlchemy Models Definition.
 This module defines the database schema using SQLAlchemy ORM (Object Relational Mapper).
 It maps Python classes to the PostgreSQL/TimescaleDB tables defined in the initialization scripts.
 
-The models strictly follow the schema defined in 'database/init/*.sql'.
 Ref: SQLAlchemy 2.0 Declarative Mapping
 """
 
@@ -24,6 +23,8 @@ from sqlalchemy import (
     Enum,
     Text,
     UniqueConstraint,
+    CheckConstraint,
+    ARRAY,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -86,10 +87,16 @@ class Asset(Base):
     )
 
     # Relationships (One-to-Many)
-    # Using cascade="all, delete-orphan" to clean up child data if an asset is deleted (conceptually).
-    quotes: Mapped[List["MarketQuote"]] = relationship(back_populates="asset")
+    # Using cascade="all, delete-orphan" to clean up child data if an asset is deleted.
+    quotes: Mapped[List["MarketQuote"]] = relationship(
+        back_populates="asset", cascade="all, delete-orphan"
+    )
     financials: Mapped[List["FinancialStatement"]] = relationship(
-        back_populates="asset"
+        back_populates="asset", cascade="all, delete-orphan"
+    )
+    # [NEW] Relationship to MarketSentiment
+    sentiment: Mapped[List["MarketSentiment"]] = relationship(
+        back_populates="asset", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
@@ -181,3 +188,64 @@ class MacroIndicator(Base):
 
     def __repr__(self) -> str:
         return f"<MacroIndicator(country='{self.country}', indicator='{self.indicator}', value={self.value})>"
+
+
+class MarketSentiment(Base):
+    """
+    Represents AI-driven sentiment analysis data derived from news or social media.
+    Maps to the 'market_sentiment' hypertable.
+
+    This table stores the quantitative output of the LLM analysis, linking
+    unstructured text (news headlines) to structured metrics (scores).
+    """
+
+    __tablename__ = "market_sentiment"
+
+    # Composite Primary Key (Time + Asset + Source)
+    # Using TIMESTAMPTZ is crucial for aligning news across global timezones.
+    time: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id"), primary_key=True)
+    source: Mapped[str] = mapped_column(String(50), primary_key=True)
+
+    # Content Metadata
+    # Storing the headline allows for future re-processing or debugging.
+    headline: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # AI Analysis Metrics (Quantitative)
+    # sentiment_score: -1.0 (Negative) to 1.0 (Positive)
+    # impact_score: 0.0 (Irrelevant) to 1.0 (High Impact)
+    # confidence: 0.0 (Unsure) to 1.0 (Certain)
+    sentiment_score: Mapped[float] = mapped_column(Double, nullable=False)
+    impact_score: Mapped[float] = mapped_column(Double, nullable=False)
+    confidence: Mapped[float] = mapped_column(Double, nullable=False)
+
+    # Advanced Classification
+    # Using ARRAY for tagging multiple topics (e.g., ['REGULATION', 'EARNINGS'])
+    # Note: Requires PostgreSQL/TimescaleDB.
+    topics: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String), nullable=True)
+
+    # Relationship
+    asset: Mapped["Asset"] = relationship(back_populates="sentiment")
+
+    # --------------------------------------------------------------------------
+    # Constraints (Data Integrity)
+    # --------------------------------------------------------------------------
+    __table_args__ = (
+        # Ensure scores remain within their valid mathematical bounds.
+        CheckConstraint(
+            "sentiment_score >= -1.0 AND sentiment_score <= 1.0",
+            name="chk_sentiment_range",
+        ),
+        CheckConstraint(
+            "impact_score >= 0.0 AND impact_score <= 1.0", name="chk_impact_range"
+        ),
+        CheckConstraint(
+            "confidence >= 0.0 AND confidence <= 1.0", name="chk_confidence_range"
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<MarketSentiment(time='{self.time}', asset_id={self.asset_id}, "
+            f"score={self.sentiment_score}, confidence={self.confidence})>"
+        )

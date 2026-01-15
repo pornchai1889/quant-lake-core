@@ -1,7 +1,19 @@
 version: '3.8'
 
+# ==============================================================================
+# Docker Compose Configuration for QuantLake Core
+# ------------------------------------------------------------------------------
+# This configuration orchestrates the following services:
+# 1. TimescaleDB: The time-series database for market data storage.
+# 2. Ollama: The inference server for LLM-based sentiment analysis.
+# 3. App: The main Python application container for ETL and Analysis.
+# ==============================================================================
+
 services:
-  # --- TimescaleDB Service (Time-Series Database) ---
+  # ----------------------------------------------------------------------------
+  # Service: TimescaleDB (Database Layer)
+  # Description: PostgreSQL with TimescaleDB extension for high-frequency data.
+  # ----------------------------------------------------------------------------
   timescaledb:
     image: timescale/timescaledb:latest-pg14
     container_name: quant_lake_db
@@ -13,39 +25,83 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      # Persist data even if container is removed
+      # Persistent storage for database files
       - timescaledb_data:/var/lib/postgresql/data
-      # Initialize database schema on first startup
+      # Initialization scripts (Schema creation)
       - ./database/init:/docker-entrypoint-initdb.d
     networks:
       - quant_lake_network
     healthcheck:
+      # Verification command to ensure DB is ready to accept connections
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # --- Application Service (Python FastAPI/Worker) ---
+  # ----------------------------------------------------------------------------
+  # Service: Ollama (AI Inference Layer)
+  # Description: Local LLM server exposing an API for sentiment analysis.
+  #              Configured to leverage NVIDIA GPU (if available) for performance.
+  # ----------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: quant_lake_llm
+    restart: always
+    ports:
+      - "11434:11434"  # Expose API port to host (allows local testing via curl)
+    volumes:
+      # Persistent storage for downloaded models (prevents re-downloading on restart)
+      - ollama_data:/root/.ollama
+    networks:
+      - quant_lake_network
+    
+    # Resource Reservation for NVIDIA GPU (RTX 2060)
+    # Note: Requires NVIDIA Container Toolkit installed on the host machine.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ----------------------------------------------------------------------------
+  # Service: Application (Logic Layer)
+  # Description: Python container running ETL pipelines and Analysis Engine.
+  # ----------------------------------------------------------------------------
   app:
     build:
       context: .
       dockerfile: docker/app.dockerfile
     container_name: quant_lake_app
     volumes:
-      # Hot-reload: map local directory to container
+      # Mount source code for hot-reloading during development
       - .:/app
     environment:
+      # Database connection string constructed from env variables
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb:5432/${DB_NAME}
+      
+      # AI Service Endpoint
+      # 'ollama' refers to the service name defined above (internal Docker DNS)
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
     depends_on:
       timescaledb:
         condition: service_healthy
+      ollama:
+        condition: service_started
     networks:
       - quant_lake_network
-    # Currently idle, waiting for commands (Phase 4 will run API)
+    
+    # Idle command to keep container running for script execution
     command: tail -f /dev/null
 
+# ==============================================================================
+# Volumes & Networks
+# ==============================================================================
 volumes:
-  timescaledb_data:
+  timescaledb_data:  # Persist DB data
+  ollama_data:       # Persist AI Models
 
 networks:
   quant_lake_network:
