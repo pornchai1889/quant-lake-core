@@ -3,14 +3,22 @@
 Crypto ETL Execution Script.
 
 This script serves as the entry point for the Cryptocurrency ETL (Extract, Transform, Load) pipeline.
-It orchestrates the following steps:
-1.  Initializes the Binance Data Fetcher.
-2.  Retrieves historical OHLCV data for specified symbols.
-3.  Ensures the asset exists in the Master Data table ('assets').
-4.  Persists the market data into the Time-Series Database ('market_quotes') using efficient bulk upserts.
+It orchestrates the retrieval of historical OHLCV data and persists it into the time-series database.
+
+Features:
+- Supports incremental loading via lookback days (default).
+- Supports historical backfilling via specific start/end dates (CLI arguments).
+- Handles efficient bulk upserts to prevent data duplication.
 
 Usage:
-    python scripts/run_crypto_etl.py --symbols BTC/USDT ETH/USDT --interval 1h --days 30
+    1. Standard Run (Default from config):
+       python scripts/run_crypto_etl.py
+
+    2. Manual Override (Last 5 days):
+       python scripts/run_crypto_etl.py --days 5
+
+    3. Backfill Specific Period:
+       python scripts/run_crypto_etl.py --start-date 2025-01-01 --end-date 2025-01-31
 """
 
 import argparse
@@ -18,7 +26,7 @@ import logging
 import sys
 import os
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import yaml
 
 import pandas as pd
@@ -26,8 +34,9 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 # ------------------------------------------------------------------------------
-# Path Setup (To allow importing from 'src' when running as a script)
+# Path Setup
 # ------------------------------------------------------------------------------
+# Add the project root to sys.path to allow imports from 'src'
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.core.config import settings  # noqa: E402
@@ -42,22 +51,32 @@ from src.data_ingestion.crypto.binance_fetcher import BinanceFetcher  # noqa: E4
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("crypto_etl")
 
+
 def load_etl_config(config_path: str = "configs/etl_config.yaml") -> Dict[str, Any]:
-    """Load ETL configuration from a YAML file."""
+    """
+    Load ETL configuration from a YAML file.
+
+    Args:
+        config_path (str): Relative path to the config file.
+
+    Returns:
+        Dict[str, Any]: The configuration dictionary.
+    """
     try:
-        # หา path ให้เจอไม่ว่าจะรันจาก folder ไหน
+        # Resolve absolute path relative to the project root
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         full_path = os.path.join(base_path, config_path)
-        
+
         with open(full_path, "r") as f:
             return yaml.safe_load(f)
     except Exception as e:
         logger.error(f"Failed to load config file: {e}")
         return {}
+
 
 def get_or_create_asset(session: Session, symbol: str) -> Asset:
     """
@@ -70,14 +89,12 @@ def get_or_create_asset(session: Session, symbol: str) -> Asset:
     Returns:
         Asset: The SQLAlchemy Asset object.
     """
-    # Normalize symbol to be consistent (Binance uses '/', we keep it or strip it depending on convention)
-    # Here we assume the input symbol matches the exchange format.
-    
     # Check if asset exists
-    asset = session.query(Asset).filter(
-        Asset.symbol == symbol,
-        Asset.exchange == "BINANCE"
-    ).one_or_none()
+    asset = (
+        session.query(Asset)
+        .filter(Asset.symbol == symbol, Asset.exchange == "BINANCE")
+        .one_or_none()
+    )
 
     if asset:
         return asset
@@ -89,7 +106,7 @@ def get_or_create_asset(session: Session, symbol: str) -> Asset:
         asset_class=AssetClass.CRYPTO,
         exchange="BINANCE",
         name=f"Crypto {symbol}",
-        is_active=True
+        is_active=True,
     )
     session.add(new_asset)
     session.commit()
@@ -116,58 +133,61 @@ def save_market_data(session: Session, asset_id: int, df: pd.DataFrame) -> int:
     # Convert DataFrame to list of dictionaries for bulk insertion
     records: List[Dict[str, Any]] = []
     for _, row in df.iterrows():
-        records.append({
-            "time": row["time"],
-            "asset_id": asset_id,
-            "open": row["open"],
-            "high": row["high"],
-            "low": row["low"],
-            "close": row["close"],
-            "volume": row["volume"],
-        })
+        records.append(
+            {
+                "time": row["time"],
+                "asset_id": asset_id,
+                "open": row["open"],
+                "high": row["high"],
+                "low": row["low"],
+                "close": row["close"],
+                "volume": row["volume"],
+            }
+        )
 
     # Prepare SQLAlchemy Upsert Statement
-    # Ref: https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#insert-on-conflict
     stmt = insert(MarketQuote).values(records)
-    
-    # Define conflict resolution: If (time, asset_id) exists, update the values.
-    # This handles cases where data might be re-fetched or corrected.
+
+    # Define conflict resolution: Update values if (time, asset_id) already exists.
     stmt = stmt.on_conflict_do_update(
-        index_elements=['time', 'asset_id'],
+        index_elements=["time", "asset_id"],
         set_={
-            'open': stmt.excluded.open,
-            'high': stmt.excluded.high,
-            'low': stmt.excluded.low,
-            'close': stmt.excluded.close,
-            'volume': stmt.excluded.volume,
-        }
+            "open": stmt.excluded.open,
+            "high": stmt.excluded.high,
+            "low": stmt.excluded.low,
+            "close": stmt.excluded.close,
+            "volume": stmt.excluded.volume,
+        },
     )
 
-    result = session.execute(stmt)
+    session.execute(stmt)
     session.commit()
-    
+
     return len(records)
 
 
-def run_etl(symbols: List[str], interval: str, days_back: int) -> None:
+def run_etl(
+    symbols: List[str],
+    interval: str,
+    start_date: datetime,
+    end_date: datetime,
+) -> None:
     """
-    Main ETL function.
+    Execute the ETL pipeline for the specified parameters.
 
     Args:
         symbols (List[str]): List of trading pairs.
         interval (str): Timeframe interval.
-        days_back (int): Number of days of history to fetch.
+        start_date (datetime): Start datetime (UTC).
+        end_date (datetime): End datetime (UTC).
     """
-    logger.info(f"Starting ETL Job for {len(symbols)} symbols. Interval: {interval}")
+    logger.info(
+        f"Starting ETL Job for {len(symbols)} symbols. "
+        f"Interval: {interval}. Range: {start_date} to {end_date}"
+    )
 
     # 1. Initialize Fetcher
-    # API Keys can be loaded from settings if needed for higher limits/private data
-    # api_key = settings.BINANCE_API_KEY
     fetcher = BinanceFetcher()
-
-    # Calculate start time
-    end_date = datetime.now(timezone.utc)
-    start_date = end_date - timedelta(days=days_back)
 
     # 2. Database Session Management
     session = SessionLocal()
@@ -180,16 +200,17 @@ def run_etl(symbols: List[str], interval: str, days_back: int) -> None:
                 asset = get_or_create_asset(session, symbol)
 
                 # Step B: Extract (Fetch Data)
+                # Note: The fetcher now handles pagination automatically
                 df = fetcher.fetch_ohlcv(
                     symbol=symbol,
                     interval=interval,
                     start_date=start_date,
                     end_date=end_date,
-                    limit=1000 # Batch size handling handled by ccxt internally or simple limit
+                    limit=1000,
                 )
-                
+
                 if df.empty:
-                    logger.warning(f"No data found for {symbol}")
+                    logger.warning(f"No data found for {symbol} in the specified range.")
                     continue
 
                 # Step C: Load (Save to DB)
@@ -200,28 +221,96 @@ def run_etl(symbols: List[str], interval: str, days_back: int) -> None:
                 logger.error(f"Error processing {symbol}: {str(e)}")
                 # Continue to next symbol even if one fails
                 continue
-                
+
     finally:
         session.close()
         logger.info("ETL Job Completed.")
 
+
+def parse_date_arg(date_str: str) -> datetime:
+    """
+    Helper function for argparse to parse date strings into UTC datetime objects.
+
+    Args:
+        date_str (str): Date string in 'YYYY-MM-DD' format.
+
+    Returns:
+        datetime: Timezone-aware (UTC) datetime object.
+
+    Raises:
+        argparse.ArgumentTypeError: If format is invalid.
+    """
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        msg = f"Not a valid date: '{date_str}'. Expected format: YYYY-MM-DD."
+        raise argparse.ArgumentTypeError(msg)
+
+
 if __name__ == "__main__":
-    # Load Config
+    # 1. Load Configuration
     config = load_etl_config()
     crypto_config = config.get("crypto", {})
-    
-    # Get defaults from YAML
-    default_symbols = crypto_config.get("symbols", ["BTC/USDT"])
-    default_interval = crypto_config.get("intervals", ["1h"])[0] # เอาค่าแรก
-    default_days = crypto_config.get("lookback_days", 30)
 
+    # Defaults from YAML
+    default_symbols = crypto_config.get("symbols", ["BTC/USDT"])
+    default_interval = crypto_config.get("intervals", ["1h"])[0]
+    default_days = crypto_config.get("lookback_days", 1)
+
+    # 2. Setup CLI Argument Parser
     parser = argparse.ArgumentParser(description="Run Crypto ETL Pipeline")
-    
-    # Implement YAML-based default configuration fallback
-    parser.add_argument("--symbols", nargs="+", default=default_symbols)
-    parser.add_argument("--interval", type=str, default=default_interval)
-    parser.add_argument("--days", type=int, default=default_days)
+
+    parser.add_argument(
+        "--symbols",
+        nargs="+",
+        default=default_symbols,
+        help="List of symbols to fetch (e.g. BTC/USDT ETH/USDT)",
+    )
+    parser.add_argument(
+        "--interval",
+        type=str,
+        default=default_interval,
+        help="Timeframe interval (e.g. 1m, 1h, 1d)",
+    )
+
+    # Date Range Arguments
+    parser.add_argument(
+        "--start-date",
+        type=parse_date_arg,
+        help="Start date (YYYY-MM-DD) for backfilling. Overrides --days.",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=parse_date_arg,
+        help="End date (YYYY-MM-DD). Defaults to NOW if not specified.",
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=default_days,
+        help="Number of lookback days (only used if --start-date is NOT provided).",
+    )
 
     args = parser.parse_args()
 
-    run_etl(symbols=args.symbols, interval=args.interval, days_back=args.days)
+    # 3. Determine Time Range Logic
+    now_utc = datetime.now(timezone.utc)
+
+    if args.start_date:
+        # Mode: Backfill / Specific Range
+        start_date = args.start_date
+        # If end_date is not provided, default to NOW
+        end_date = args.end_date if args.end_date else now_utc
+    else:
+        # Mode: Incremental / Recent History
+        end_date = now_utc
+        start_date = end_date - timedelta(days=args.days)
+
+    # 4. Execute ETL
+    run_etl(
+        symbols=args.symbols,
+        interval=args.interval,
+        start_date=start_date,
+        end_date=end_date,
+    )

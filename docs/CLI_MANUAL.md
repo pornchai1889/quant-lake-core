@@ -6,7 +6,7 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
 The **Crypto ETL Pipeline** is a robust utility designed to extract historical OHLCV (Open, High, Low, Close, Volume) market data from the Binance Exchange, normalize it, and persist it into the **QuantLake** TimescaleDB instance.
 
@@ -18,7 +18,7 @@ This script supports two primary modes of operation:
 
 ---
 
-## 🚀 Usage Syntax
+## Usage Syntax
 
 Run the script from the project root directory using the Python interpreter:
 
@@ -27,7 +27,7 @@ python scripts/run_crypto_etl.py [OPTIONS]
 
 ```
 
-### ⚙️ Command-Line Arguments
+### Command-Line Arguments
 
 | Argument | Type | Format | Default | Description |
 | --- | --- | --- | --- | --- |
@@ -39,7 +39,7 @@ python scripts/run_crypto_etl.py [OPTIONS]
 
 ---
 
-## 💡 Usage Examples
+## Usage Examples
 
 ### 1. Standard Incremental Run (Daily Cron)
 
@@ -96,7 +96,7 @@ python scripts/run_crypto_etl.py \
 
 ---
 
-## ⚠️ Important Notes
+## Important Notes
 
 * **Timezone:** All dates provided via CLI are treated as **UTC**. The database stores all timestamps in UTC to ensure consistency across global markets.
 * **Data Integrity (Upsert):** The pipeline uses an *Upsert* strategy (Update on Conflict). If you re-run the script over an existing period, it will update the existing records rather than creating duplicates.
