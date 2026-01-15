@@ -38,13 +38,14 @@ from src.database.connection import Base
 class AssetClass(str, PyEnum):
     """
     Enumeration for Asset Classes.
-    Matches the PostgreSQL ENUM type 'asset_class_enum'.
+    Defines the type of financial instrument.
     """
-
     CRYPTO = "CRYPTO"
     STOCK = "STOCK"
     FOREX = "FOREX"
     COMMODITY = "COMMODITY"
+    INDEX = "INDEX"  # For Market Indices (SET, DJI, GLOBAL_CRYPTO)
+    MACRO = "MACRO"  # For Macroeconomic Events (GLOBAL_MACRO)
 
 
 # ------------------------------------------------------------------------------
