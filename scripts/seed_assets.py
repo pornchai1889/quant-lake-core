@@ -17,7 +17,7 @@ import logging
 import sys
 import os
 import yaml
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -67,9 +67,6 @@ def upsert_asset(session: Session, asset_data: Dict[str, Any]) -> None:
 
     if existing_asset:
         logger.info(f"Asset already exists: {symbol} ({exchange}) - Skipping.")
-        # Optional: Update name/description if needed
-        # existing_asset.name = name
-        # existing_asset.description = description
     else:
         logger.info(f"Creating new Asset: {symbol} ({exchange}) [{asset_class}]")
         new_asset = Asset(
@@ -107,7 +104,6 @@ def seed_master_data() -> None:
         # -----------------------------------------------------
         crypto_config = config.get("crypto", {})
         for symbol in crypto_config.get("symbols", []):
-            # Auto-construct asset data for Crypto
             asset_data = {
                 "symbol": symbol,
                 "exchange": crypto_config.get("source", "BINANCE"),
@@ -122,7 +118,6 @@ def seed_master_data() -> None:
         # -----------------------------------------------------
         stocks_config = config.get("stocks", {})
         for symbol in stocks_config.get("symbols", []):
-            # Auto-construct asset data for Stocks
             asset_data = {
                 "symbol": symbol,
                 "exchange": stocks_config.get("source", "YAHOO"),
