@@ -1,114 +1,84 @@
 # ------------------------------------------------------------------------------
 # ETL Pipeline Configuration
 # ------------------------------------------------------------------------------
-# This configuration drives both the Master Data Seeding (initialization)
-# and the Daily ETL Operations (price ingestion).
-# ------------------------------------------------------------------------------
-
-# ==============================================================================
-# 1. Master Data Seeding (Static & Special Assets)
-# ==============================================================================
-# Assets listed here will be seeded into the database but are NOT actively
-# fetched for OHLCV price data by default. They are primarily for:
-# - Sentiment Analysis (News/Social)
-# - Macroeconomic Indicators
-# - Benchmarking (Indices)
-# ==============================================================================
-seeds:
-  # Market Indices & Benchmarks
-  # Note: Yahoo Finance tickers often require suffixes (e.g., .BK for Thailand)
-  indices:
-    - symbol: "GLOBAL_CRYPTO"
-      name: "Global Crypto Market Sentiment"
-      asset_class: "INDEX"
-      exchange: "GLOBAL"
-      description: "Aggregated sentiment representing the overall crypto market state."
-
-    - symbol: "^SET.BK"
-      name: "Stock Exchange of Thailand"
-      asset_class: "INDEX"
-      exchange: "SET"
-      description: "Thailand composite stock market index (SET Index)."
-
-    - symbol: "^DJI"
-      name: "Dow Jones Industrial Average"
-      asset_class: "INDEX"
-      exchange: "US"
-      description: "US market benchmark index (30 prominent companies)."
-
-    - symbol: "^GSPC"
-      name: "S&P 500"
-      asset_class: "INDEX"
-      exchange: "US"
-      description: "Standard & Poor's 500 Index (Broad US Market)."
-
-    - symbol: "^IXIC"
-      name: "NASDAQ Composite"
-      asset_class: "INDEX"
-      exchange: "US"
-      description: "NASDAQ Composite Index (Tech-heavy benchmark)."
-
-  # Macroeconomic Events (Global)
-  macro:
-    - symbol: "GLOBAL_MACRO"
-      name: "World Economic Events"
-      asset_class: "MACRO"
-      exchange: "GLOBAL"
-      description: "Global economic indicators (Inflation, Rates, Geopolitics)."
-
-# ==============================================================================
-# 2. Active Trading Assets (Price Ingestion)
-# ==============================================================================
-# Assets listed here serve a dual purpose:
-# 1. They are auto-seeded into Master Data if not present.
-# 2. They are actively targeted by 'run_crypto_etl.py' and 'run_stock_etl.py'.
-# ==============================================================================
+# This configuration file defines the settings for data extraction,
 
 # --- Cryptocurrency Settings (Source: Binance) ---
 crypto:
   source: "BINANCE"
   
-  # Major Cryptocurrencies (High Market Cap)
+  # Major Cryptocurrencies (High Market Cap & Volume)
   symbols:
-    - "BTC/USDT"
-    - "ETH/USDT"
-    - "BNB/USDT"
-    - "SOL/USDT"
+    - "BTC/USDT"   # Bitcoin
+  #  - "ETH/USDT"   # Ethereum
+  #  - "BNB/USDT"   # Binance Coin
+  #  - "SOL/USDT"   # Solana
+  #  - "XRP/USDT"   # Ripple
 
   # Default intervals to fetch
   intervals:
     - "1m"
-  #  - "1h"
-  #  - "1d"
+    - "1h"
+    - "1d"
     
   # Historical data depth for incremental updates (days)
   lookback_days: 1
 
-# --- Stock Market Settings (Source: Yahoo Finance) ---
-stocks:
+# --- Global Market Settings (Source: Yahoo Finance) ---
+# Renamed from 'stocks' to 'yahoo_finance' to reflect diverse asset coverage.
+yahoo_finance:
   source: "YAHOO"
   
+  # Mixed Assets (Stocks, Indices, Forex, Commodities)
   symbols:
-    # --- US Tech Giants (The Magnificent Seven & Friends) ---
-    - "AAPL"   # Apple Inc.
-    - "TSLA"   # Tesla Inc.
-    - "MSFT"   # Microsoft Corp.
-    - "GOOGL"  # Alphabet Inc. (Google)
-    - "NVDA"   # NVIDIA Corp.
-    - "AMZN"   # Amazon.com Inc.
-    - "META"   # Meta Platforms Inc. (Facebook)
+    # ---------------------------------------------------------
+    # 1. Major Indices (Market Benchmarks)
+    # ---------------------------------------------------------
+  #  - "^GSPC"      # S&P 500 (US Broad Market)
+  #  - "^DJI"       # Dow Jones Industrial Average
+  #  - "^IXIC"      # NASDAQ Composite (Tech)
+  #  - "^SET.BK"    # SET Index (Thailand)
 
-    # --- Thai Blue Chips (Sector Leaders) ---
-    # Note: Yahoo Finance uses '.BK' suffix for SET market symbols.
-    - "PTT.BK"     # PTT Public Company (Energy/Oil - Largest in TH)
-    - "AOT.BK"     # Airports of Thailand (Tourism/Transport)
-    - "KBANK.BK"   # Kasikornbank (Finance/Banking)
-    - "CPALL.BK"   # CP ALL (Commerce - 7-Eleven)
-    - "ADVANC.BK"  # Advanced Info Service (ICT/Telecom - AIS)
-    - "BDMS.BK"    # Bangkok Dusit Medical Services (Healthcare)
-    
+    # ---------------------------------------------------------
+    # 2. Commodities (Futures) -> Ends with =F
+    # ---------------------------------------------------------
+  #  - "GC=F"       # Gold Futures
+  #  - "SI=F"       # Silver Futures
+  #  - "CL=F"       # Crude Oil Futures (WTI)
+  #  - "HG=F"       # Copper Futures
+
+    # ---------------------------------------------------------
+    # 3. Forex (Currencies) -> Ends with =X
+    # ---------------------------------------------------------
+  #  - "EURUSD=X"   # Euro / US Dollar
+  #  - "USDJPY=X"   # US Dollar / Japanese Yen
+  #  - "GBPUSD=X"   # British Pound / US Dollar
+  #  - "USDTHB=X"   # US Dollar / Thai Baht (Crucial for TH Traders)
+  #  - "DX-Y.NYB"   # US Dollar Index (DXY)
+
+    # ---------------------------------------------------------
+    # 4. Global Tech Giants (US Stocks)
+    # ---------------------------------------------------------
+  #  - "AAPL"       # Apple Inc.
+  #  - "MSFT"       # Microsoft Corp.
+  #  - "GOOGL"      # Alphabet Inc.
+  #  - "AMZN"       # Amazon.com Inc.
+  #  - "NVDA"       # NVIDIA Corp.
+  #  - "TSLA"       # Tesla Inc.
+  #  - "META"       # Meta Platforms Inc.
+
+    # ---------------------------------------------------------
+    # 5. Thai Blue Chips (TH Stocks)
+    # ---------------------------------------------------------
+    - "PTT.BK"     # PTT Public Company (Energy)
+  #  - "AOT.BK"     # Airports of Thailand
+  #  - "CPALL.BK"   # CP ALL (Commerce)
+  #  - "KBANK.BK"   # Kasikornbank
+  #  - "ADVANC.BK"  # AIS (Telecom)
+  #  - "BDMS.BK"    # Bangkok Dusit Medical Services
+  #  - "DELTA.BK"   # Delta Electronics (Thailand)
+
   intervals:
     - "1m"
     
-  # Historical data depth for incremental updates (days)
   lookback_days: 1
